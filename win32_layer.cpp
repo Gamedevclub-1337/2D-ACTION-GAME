@@ -240,12 +240,12 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 
 	glGenVertexArrays(1, &vertex_arr);
 	glBindVertexArray(vertex_arr);
-	//glBindBuffer(0x8892, vertex_buffer);
-	//glBufferData(0x8892, sizeof(player_vert), player_vert, 0x88E4);
+	glBindBuffer(0x8892, vertex_buffer);
+	glBufferData(0x8892, sizeof(player_vert), player_vert, 0x88E4);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	//glUseProgram(gun_p);
-	// glDrawArrays(GL_TRIANGLES, 0, 3);
+	glUseProgram(gun_p);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
     while (1)
 	{ 
       if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
