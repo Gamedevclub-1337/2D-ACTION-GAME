@@ -59,7 +59,6 @@ void ProcessInput()
 // The function pointers for the opengl functions we'll need here
 typedef void   (*GL_GENBUFFERS) (GLsizei, GLuint*);
 typedef void   (*GL_DRAWELEMENT) (GLenum, GLsizei, GLenum, const void*);
-typedef void   (*GL_DRAWARRAYS) (GLenum, GLint, GLsizei);
 typedef void   (*GL_SHADERSOURCE) (GLuint, GLsizei, const char* const*, const int*);
 typedef void   (*GL_BUFFERDATA) (GLenum, ptrdiff_t, const void*, GLenum);
 typedef void   (*GL_BINDVERTEXARRAY) (GLuint);
@@ -159,7 +158,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	GL_BUFFERDATA		glBufferData = (GL_BUFFERDATA)wglGetProcAddress("glBufferData");
 	GL_GENVERTEXARRAYS	glGenVertexArrays = (GL_GENVERTEXARRAYS)wglGetProcAddress("glGenVertexArrays");
 	GL_BINDVERTEXARRAY	glBindVertexArray = (GL_BINDVERTEXARRAY)wglGetProcAddress("glBindVertexArray");
-	GL_DRAWARRAYS		glDrawArrays = (GL_DRAWARRAYS)wglGetProcAddress("glDrawArrays");
 
 	DestroyWindow(hwindow);
 
@@ -183,18 +181,18 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	};
 	static const int attrib_list[] = {
 	  WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-	  WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+	  WGL_CONTEXT_MINOR_VERSION_ARB, 3,
 	  WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 	  0, 0 };
     int pixel_format;
 	UINT num_format;
 
 	// Initialize opengl context
-	wglChoosePixelFormatARB(hdc, attriblist, 0, 1, &pixel_format, &num_format);	
+	wglChoosePixelFormatARB(hdc, attriblist, 0, 1, &pixel_format, &num_format);
 	SetPixelFormat(hdc, pixel_format, &pdf);
 	openglcontext = wglCreateContextAttribsARB(hdc, 0, attrib_list);
 	wglMakeCurrent(hdc, openglcontext);
-
+	MessageBoxA(0, (char*)glGetString(GL_VERSION), "VERSION", 0);
 	const char *vertex_src = "#version 330 core\n"
 	  "layout (location = 0) in vec3 aPos;\n"
 	  "void main()\n"
@@ -229,21 +227,17 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	};
 
 	GLuint vertex_buffer = 0;
+	GLuint vertex_arr = 0;
 
+	glGenVertexArrays(1, &vertex_arr);
+	glBindVertexArray(vertex_arr);
+	
 	glGenBuffers(1, &vertex_buffer);
 	glBindBuffer(0x8892, vertex_buffer);
 	glBufferData(0x8892, sizeof(player_vert), player_vert, 0x88E4);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	GLuint vertex_arr = 0;
-
-	glGenVertexArrays(1, &vertex_arr);
-	glBindVertexArray(vertex_arr);
-	glBindBuffer(0x8892, vertex_buffer);
-	glBufferData(0x8892, sizeof(player_vert), player_vert, 0x88E4);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
     while (1)
 	{ 
       if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
