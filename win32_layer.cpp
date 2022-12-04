@@ -19,7 +19,6 @@
 #include <GL/GL.h>
 #include <wingdi.h>
 #include "wglext.h"
-//#include "glcorearb.h"
 
 int x = 0;
 int gun_dir = 1;
@@ -117,34 +116,29 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	HWND hwindow = CreateWindowEx(0, "CLASS1", "Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, WIDTH, HEIGHT, 0, 0, hinstance, 0);
 	HDC hdc = GetDC(hwindow);
 
-	PIXELFORMATDESCRIPTOR pdf =
-	{
-		sizeof(PIXELFORMATDESCRIPTOR),
-		1,
-		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-		PFD_TYPE_RGBA,
-		32,
-		0, 0, 0, 0, 0, 0,
-		0,
-		0,
-		0,
-		0, 0, 0, 0,
-		24,
-		8,
-		0,
-		PFD_MAIN_PLANE,
-		0,
-		0, 0, 0
-	  };
+	PIXELFORMATDESCRIPTOR pdf;
+	pdf.nSize =	sizeof(PIXELFORMATDESCRIPTOR);
+	pdf.nVersion = 1;
+	pdf.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pdf.iPixelType = PFD_TYPE_RGBA;
+	pdf.cColorBits = 32;
+	pdf.cDepthBits = 24;
+	pdf.cStencilBits = 8;
+	pdf.cAlphaBits = 8;
+	pdf.iLayerType = PFD_MAIN_PLANE;
 	int l = ChoosePixelFormat(hdc, &pdf);
 	SetPixelFormat(hdc, l, &pdf);
 	HGLRC openglcontext = wglCreateContext(hdc);
 	wglMakeCurrent(hdc, openglcontext);
 
-	GL_CREATESHADER glCreateShader = (GL_CREATESHADER)wglGetProcAddress("glCreateShader");
-	GL_GENBUFFERS glGenBuffers = (GL_GENBUFFERS)wglGetProcAddress("glGenBuffers");
-    WGLCHOOSEPIXELFORMATARB *wglChoosePixelFormatARB = (WGLCHOOSEPIXELFORMATARB*)wglGetProcAddress("wglChoosePixelFormatARB");	
+	WGLCHOOSEPIXELFORMATARB *wglChoosePixelFormatARB = (WGLCHOOSEPIXELFORMATARB*)wglGetProcAddress("wglChoosePixelFormatARB");	
 	WGLCREATECONTEXTATTRIBSARB wglCreateContextAttribsARB = (WGLCREATECONTEXTATTRIBSARB)wglGetProcAddress("wglCreateContextAttribsARB");
+	
+	GL_CREATESHADER     glCreateShader = (GL_CREATESHADER)wglGetProcAddress("glCreateShader");
+	GL_BINDBUFFER		glBindBuffer = (GL_BINDBUFFER)wglGetProcAddress("glBindBuffer");
+	GL_USEPROGRAM		glUseProgram = (GL_USEPROGRAM)wglGetProcAddress("glUseProgram");
+	GL_BUFFERDATA		glBufferData = (GL_BUFFERDATA)wglGetProcAddress("glBufferData");	
+	GL_GENBUFFERS       glGenBuffers = (GL_GENBUFFERS)wglGetProcAddress("glGenBuffers");    
 	GL_SHADERSOURCE		glShaderSource = (GL_SHADERSOURCE)wglGetProcAddress("glShaderSource");
 	GL_COMPILESHADER	glCompileShader = (GL_COMPILESHADER)wglGetProcAddress("glCompileShader");
 	GL_CREATEPROGRAM	glCreateProgram = (GL_CREATEPROGRAM)wglGetProcAddress("glCreateProgram");
@@ -153,19 +147,18 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	GL_DELETESHADER		glDeleteShader = (GL_DELETESHADER)wglGetProcAddress("glDeleteShader");
 	GL_VERTEXATTRIBPOINTER glVertexAttribPointer = (GL_VERTEXATTRIBPOINTER)wglGetProcAddress("glVertexAttribPointer");
 	GL_ENABLEVERTEXATTRIBARRAY glEnableVertexAttribArray = (GL_ENABLEVERTEXATTRIBARRAY)wglGetProcAddress("glEnableVertexAttribArray");
-	GL_BINDBUFFER		glBindBuffer = (GL_BINDBUFFER)wglGetProcAddress("glBindBuffer");
-	GL_USEPROGRAM		glUseProgram = (GL_USEPROGRAM)wglGetProcAddress("glUseProgram");
-	GL_BUFFERDATA		glBufferData = (GL_BUFFERDATA)wglGetProcAddress("glBufferData");
 	GL_GENVERTEXARRAYS	glGenVertexArrays = (GL_GENVERTEXARRAYS)wglGetProcAddress("glGenVertexArrays");
 	GL_BINDVERTEXARRAY	glBindVertexArray = (GL_BINDVERTEXARRAY)wglGetProcAddress("glBindVertexArray");
 
+	
+	wglMakeCurrent(hdc, 0);
+	wglDeleteContext(openglcontext);
+	ReleaseDC(hwindow, hdc);
 	DestroyWindow(hwindow);
 
 	HWND hwindo = CreateWindowEx(0, "CLASS2", "Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, WIDTH, HEIGHT, 0, 0, hinstance, 0);
 	hdc = GetDC(hwindo);
 	openglcontext = 0;
-
-	hdc = GetDC(hwindo);
 	l = ChoosePixelFormat(hdc, &pdf);
 
     const   int attriblist[] =
@@ -174,6 +167,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
       WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
 	  WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
 	  WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+	  WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
       WGL_COLOR_BITS_ARB, 32,
 	  WGL_DEPTH_BITS_ARB, 24,
 	  WGL_STENCIL_BITS_ARB, 8,
@@ -183,17 +177,21 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	  WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
 	  WGL_CONTEXT_MINOR_VERSION_ARB, 3,
 	  WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-	  0, 0 };
+	  WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+	  0};
     int pixel_format;
 	UINT num_format;
 
 	// Initialize opengl context
 	wglChoosePixelFormatARB(hdc, attriblist, 0, 1, &pixel_format, &num_format);
+	ZeroMemory(&pdf, sizeof(pdf));
+	DescribePixelFormat(hdc, pixel_format, sizeof(pdf), &pdf);
 	SetPixelFormat(hdc, pixel_format, &pdf);
 	openglcontext = wglCreateContextAttribsARB(hdc, 0, attrib_list);
 	wglMakeCurrent(hdc, openglcontext);
-	MessageBoxA(0, (char*)glGetString(GL_VERSION), "VERSION", 0);
-	const char *vertex_src = "#version 330 core\n"
+
+	
+    const char *vertex_src = "#version 330 core\n"
 	  "layout (location = 0) in vec3 aPos;\n"
 	  "void main()\n"
 	  "{\n"
@@ -219,21 +217,21 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	glDeleteShader(v_ID);
 	glDeleteShader(f_ID);
 
-	const float	player_vert[6] =
+	float	player_vert[] =
 	{
-	  0.0f, 0.5f,
-	  0.5f, 0.5f,
-	  0.5f, -0.5f
+	  0.0f, 0.5f, 0.0f,
+	  0.5f, 0.5f, 0.0f,
+	  0.5f, -0.5f, 0.0f
 	};
 
 	GLuint vertex_buffer = 0;
 	GLuint vertex_arr = 0;
 
 	glGenVertexArrays(1, &vertex_arr);
-	glBindVertexArray(vertex_arr);
-	
 	glGenBuffers(1, &vertex_buffer);
+
 	glBindBuffer(0x8892, vertex_buffer);
+	glBindVertexArray(vertex_arr);
 	glBufferData(0x8892, sizeof(player_vert), player_vert, 0x88E4);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -270,13 +268,6 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		case WM_CLOSE:
 			DestroyWindow(hwnd);
 		break;
-		case WM_PAINT:
-		{
-			hdc = BeginPaint(hwnd, &ps);
-			GetClientRect(hwnd, &rect);
-			EndPaint(hwnd, &ps);
-			return 0;
-		}
 		case WM_QUIT:
 		case WM_DESTROY:
 		{
