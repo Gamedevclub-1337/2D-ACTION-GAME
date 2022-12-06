@@ -20,10 +20,9 @@
 #include <wingdi.h>
 #include "wglext.h"
 
-int x = 0;
-int gun_dir = 1;
-int speed = 20;
-float rot_angle = 0;
+float speed = 1.0f;
+float jumping_velocity = 0.0008f;
+float gravity = 0.0001f;
 
 LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam); // Window Procedure Handler
 
@@ -41,25 +40,30 @@ struct player
   float y;
 };
 
+bool is_on_ground = 1;
+
 void ProcessInput()
 {
 	if (KEY_DOWN(VK_LEFT))
-    {
-	  x-=speed;
-	  gun_dir = 300;
-	}
+	  speed = -0.5f;
     if (KEY_DOWN(VK_RIGHT))
+	  speed = 0.5f;
+	if (KEY_UP(VK_LEFT) && KEY_UP(VK_RIGHT))
+	  speed = 0;
+	if (KEY_DOWN(VK_SPACE) && is_on_ground)
 	{
-	  x+=speed;
-	  gun_dir = 0;
+	  is_on_ground = 0;
+	  jumping_velocity = 0.0008f;
 	}
 }
 
 // The function pointers for the opengl functions we'll need here
 typedef void   (*GL_GENBUFFERS) (GLsizei, GLuint*);
+typedef GLuint (*GL_GETUNIFORMLOCATION) (GLuint, const char*);
 typedef void   (*GL_DRAWELEMENT) (GLenum, GLsizei, GLenum, const void*);
 typedef void   (*GL_SHADERSOURCE) (GLuint, GLsizei, const char* const*, const int*);
 typedef void   (*GL_BUFFERDATA) (GLenum, ptrdiff_t, const void*, GLenum);
+typedef void   (*GL_UNIFORM1F) (GLint, GLfloat);
 typedef void   (*GL_BINDVERTEXARRAY) (GLuint);
 typedef void   (*GL_BINDBUFFER) (GLenum, GLuint);
 typedef void   (*GL_LINKPROGRAM) (GLuint);
@@ -78,40 +82,40 @@ typedef HGLRC (*WGLCREATECONTEXTATTRIBSARB) (HDC, HGLRC, const int*);
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int cmd_show)
 {
-	WNDCLASSEX 				winclass;
-	WNDCLASSEX				realclass;
+    WNDCLASSEX 				dummy_window_class;
+    WNDCLASSEX				real_window_class;
 	MSG						msg = {};
-    POINT					mouse_pos;
+    POINT					mouse_pos = {};
 
-	winclass.cbSize = sizeof(WNDCLASSEX);
-	winclass.style = CS_OWNDC;
-	winclass.lpfnWndProc = DefWindowProc;
-	winclass.cbClsExtra = 0;
-	winclass.cbWndExtra = 0;
-	winclass.hInstance = hinstance;
-	winclass.hIcon = LoadIcon(0, IDI_APPLICATION);
-	winclass.hCursor = LoadCursor(0, IDC_ARROW);
-	winclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-	winclass.lpszMenuName = 0;
-	winclass.lpszClassName = "CLASS1";
-	winclass.hIconSm = LoadIcon(0, IDI_APPLICATION);
+	dummy_window_class.cbSize = sizeof(WNDCLASSEX);
+    dummy_window_class.style = CS_OWNDC;
+    dummy_window_class.lpfnWndProc = DefWindowProc;
+    dummy_window_class.cbClsExtra = 0;
+    dummy_window_class.cbWndExtra = 0;
+	dummy_window_class.hInstance = hinstance;
+    dummy_window_class.hIcon = LoadIcon(0, IDI_APPLICATION);
+    dummy_window_class.hCursor = LoadCursor(0, IDC_ARROW);
+    dummy_window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    dummy_window_class.lpszMenuName = 0;
+    dummy_window_class.lpszClassName = "CLASS1";
+    dummy_window_class.hIconSm = LoadIcon(0, IDI_APPLICATION);
 
-	RegisterClassEx(&winclass);
+	RegisterClassEx(&dummy_window_class);
 
-    realclass.cbSize = sizeof(WNDCLASSEX);
-    realclass.style = CS_OWNDC;
-    realclass.lpfnWndProc = WinProc;
-    realclass.cbClsExtra = 0;
-	realclass.cbWndExtra = 0;
-	realclass.hInstance = hinstance;
-	realclass.hIcon = LoadIcon(0, IDI_APPLICATION);
-	realclass.hCursor = LoadCursor(0, IDC_ARROW);
-	realclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-	realclass.lpszMenuName = 0;
-	realclass.lpszClassName = "CLASS2";
-	realclass.hIconSm = LoadIcon(0, IDI_APPLICATION);
+    real_window_class.cbSize = sizeof(WNDCLASSEX);
+    real_window_class.style = CS_OWNDC;
+    real_window_class.lpfnWndProc = WinProc;
+    real_window_class.cbClsExtra = 0;
+	real_window_class.cbWndExtra = 0;
+	real_window_class.hInstance = hinstance;
+	real_window_class.hIcon = LoadIcon(0, IDI_APPLICATION);
+	real_window_class.hCursor = LoadCursor(0, IDC_ARROW);
+	real_window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	real_window_class.lpszMenuName = 0;
+	real_window_class.lpszClassName = "CLASS2";
+	real_window_class.hIconSm = LoadIcon(0, IDI_APPLICATION);
 
-	RegisterClassEx(&realclass);
+	RegisterClassEx(&real_window_class);
 
 	HWND hwindow = CreateWindowEx(0, "CLASS1", "Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, WIDTH, HEIGHT, 0, 0, hinstance, 0);
 	HDC hdc = GetDC(hwindow);
@@ -149,8 +153,9 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	GL_ENABLEVERTEXATTRIBARRAY glEnableVertexAttribArray = (GL_ENABLEVERTEXATTRIBARRAY)wglGetProcAddress("glEnableVertexAttribArray");
 	GL_GENVERTEXARRAYS	glGenVertexArrays = (GL_GENVERTEXARRAYS)wglGetProcAddress("glGenVertexArrays");
 	GL_BINDVERTEXARRAY	glBindVertexArray = (GL_BINDVERTEXARRAY)wglGetProcAddress("glBindVertexArray");
+	GL_GETUNIFORMLOCATION glGetUniformLocation = (GL_GETUNIFORMLOCATION)wglGetProcAddress("glGetUniformLocation");
+	GL_UNIFORM1F		glUniform1f = (GL_UNIFORM1F)wglGetProcAddress("glUniform1f");
 
-	
 	wglMakeCurrent(hdc, 0);
 	wglDeleteContext(openglcontext);
 	ReleaseDC(hwindow, hdc);
@@ -189,56 +194,217 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	SetPixelFormat(hdc, pixel_format, &pdf);
 	openglcontext = wglCreateContextAttribsARB(hdc, 0, attrib_list);
 	wglMakeCurrent(hdc, openglcontext);
-
 	
-    const char *vertex_src = "#version 330 core\n"
+    const char *player_vertex_shader = "#version 330 core\n"
 	  "layout (location = 0) in vec3 aPos;\n"
 	  "void main()\n"
 	  "{\n"
 	  " gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
 	  "}\0";
-	const char *frag_src = "#version 330 core\n"
+	const char *player_fragment_shader = "#version 330 core\n"
 	  "out vec4 FragColor;\n"
 	  "void main()\n"
 	  "{\n"
-	  "FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+	  "FragColor = vec4(1.0f, 0.0f, 0.0f, 0.0f);\n"
 	  "}\0";
 
-	GLuint v_ID = glCreateShader(0x8B31);
-	glShaderSource(v_ID, 1, &vertex_src, 0);
-	glCompileShader(v_ID);
-	GLuint f_ID = glCreateShader(0x8B30);
-	glShaderSource(f_ID, 1, &frag_src, 0);
-	glCompileShader(f_ID);
-	GLuint gun_p = glCreateProgram();
-	glAttachShader(gun_p, v_ID);
-	glAttachShader(gun_p, f_ID);
-	glLinkProgram(gun_p);
-	glDeleteShader(v_ID);
-	glDeleteShader(f_ID);
+	const char *gun_vertex_shader = "#version 330 core\n"
+	  "layout (location = 0) in vec3 aPos;\n"
+	  "uniform float angle;\n"
+	  "uniform float rotation_offset_x;\n" 
+	  "uniform float rotation_offset_y;\n"
+	  "void main()\n"
+	  "{\n"
+	  " float rotation_position_x = cos(angle) * (aPos.x - rotation_offset_x) - sin(angle) * (aPos.y - rotation_offset_y);\n"
+	  " float rotation_position_y = sin(angle) * (aPos.x - rotation_offset_x) + cos(angle) * (aPos.y - rotation_offset_y);\n"
+	  " rotation_position_x += rotation_offset_x;\n"
+	  " rotation_position_y += rotation_offset_y;\n"
+	  " gl_Position = vec4(rotation_position_x, rotation_position_y, aPos.z, 1.0);\n"
+	  "}\0";	
+	const char *gun_fragment_shader = "#version 330 core\n"
+	  "out vec4 FragColor;\n"
+	  "void main()\n"
+	  "{\n"
+	  "FragColor = vec4(0.4f, 0.4f, 0.4f, 0.0f);\n"
+	  "}\0";
+	const char *ground_fragment_shader = "#version 330 core\n"
+	  "out vec4 FragColor;\n"
+	  "void main()\n"
+	  "{\n"
+	  "FragColor = vec4(0.2f, 0.2f, 0.2f, 0.0f);\n"
+	  "}\0";
 
-	float	player_vert[] =
+	const char *ground_vertex_shader = "#version 330 core\n"
+	  "layout (location = 0) in vec3 aPos;\n"
+	  "uniform float angle;\n"
+	  "uniform float rotation_offset_x;\n" 
+	  "uniform float rotation_offset_y;\n"
+	  "void main()\n"
+	  "{\n"
+	  " float rotation_position_x = cos(angle) * (aPos.x - rotation_offset_x) - sin(angle) * (aPos.y - rotation_offset_y);\n"
+	  " float rotation_position_y = sin(angle) * (aPos.x - rotation_offset_x) + cos(angle) * (aPos.y - rotation_offset_y);\n"
+	  " rotation_position_x += rotation_offset_x;\n"
+	  " rotation_position_y += rotation_offset_y;\n"
+	  " gl_Position = vec4(rotation_position_x, rotation_position_y, aPos.z, 1.0);\n"
+	  "}\0";
+	
+	GLuint player_vertex_ID = glCreateShader(0x8B31);
+	glShaderSource(player_vertex_ID, 1, &player_vertex_shader, 0);
+	glCompileShader(player_vertex_ID);
+	GLuint player_fragement_ID = glCreateShader(0x8B30);
+	glShaderSource(player_fragement_ID, 1, &player_fragment_shader, 0);
+	glCompileShader(player_fragement_ID);
+	GLuint player_shader_program = glCreateProgram();
+	glAttachShader(player_shader_program, player_vertex_ID);
+	glAttachShader(player_shader_program, player_fragement_ID);
+	glLinkProgram(player_shader_program);
+	glDeleteShader(player_vertex_ID);
+	glDeleteShader(player_fragement_ID);
+
+	GLuint gun_vertex_ID = glCreateShader(0x8B31);
+	glShaderSource(gun_vertex_ID, 1, &gun_vertex_shader, 0);
+	glCompileShader(gun_vertex_ID);
+	GLuint gun_fragement_ID = glCreateShader(0x8B30);
+	glShaderSource(gun_fragement_ID, 1, &gun_fragment_shader, 0);
+	glCompileShader(gun_fragement_ID);
+	GLuint gun_shader_program = glCreateProgram();
+	glAttachShader(gun_shader_program, gun_vertex_ID);
+	glAttachShader(gun_shader_program, gun_fragement_ID);
+	glLinkProgram(gun_shader_program);
+	glDeleteShader(gun_vertex_ID);
+	glDeleteShader(gun_fragement_ID);
+
+	GLuint ground_vertex_ID = glCreateShader(0x8B31);
+	glShaderSource(ground_vertex_ID, 1, &ground_vertex_shader, 0);
+	glCompileShader(ground_vertex_ID);
+	GLuint ground_fragement_ID = glCreateShader(0x8B30);
+	glShaderSource(ground_fragement_ID, 1, &ground_fragment_shader, 0);
+	glCompileShader(ground_fragement_ID);
+	GLuint ground_shader_program = glCreateProgram();
+	glAttachShader(ground_shader_program, ground_vertex_ID);
+	glAttachShader(ground_shader_program, ground_fragement_ID);
+	glLinkProgram(ground_shader_program);
+	glDeleteShader(ground_vertex_ID);
+	glDeleteShader(ground_fragement_ID);
+
+	float	player_vertices[] =
 	{
-	  0.0f, 0.5f, 0.0f,
-	  0.5f, 0.5f, 0.0f,
-	  0.5f, -0.5f, 0.0f
+	  -0.05f, 0.1f, 0.0f,
+ 	   0.05f, 0.1f, 0.0f,
+	   0.05f,-0.1f, 0.0f,
+	  -0.05f,-0.1f, 0.0f
 	};
+	int    player_indecies[] =
+	{
+	  0, 1, 3,
+	  1, 3, 2
+	};
+	float	gun_vertices[] =
+	{
+	   0.0f, 0.02f, 0.0f,
+	   0.2f, 0.02f, 0.0f,
+	   0.2f,-0.05f, 0.0f,
+	   0.0f,-0.05f, 0.0f
+	};
+	int    gun_indecies[] =
+	{
+	  0, 1, 3,
+	  1, 3, 2
+	};
+	float	ground_vertices[] =
+	{
+	  -1.0f, -0.1f, 0.0f,
+	   1.0f, -0.1f, 0.0f,
+	   1.0f,-0.2f, 0.0f,
+	  -1.0f,-0.2f, 0.0f
+	};
+	int    ground_indecies[] =
+	{
+	  0, 1, 3,
+	  1, 3, 2
+	};
+	
+	GLuint player_vertex_buffer = 0;
+	GLuint player_vertex_array = 0;
+	GLuint player_element_buffer_object = 0;
 
-	GLuint vertex_buffer = 0;
-	GLuint vertex_arr = 0;
+	GLuint gun_vertex_buffer = 0;
+	GLuint gun_vertex_array = 0;
+	GLuint gun_element_buffer_object = 0;
+	
+	GLuint ground_vertex_buffer = 0;
+	GLuint ground_vertex_array = 0;
+	GLuint ground_element_buffer_object = 0;
+	
+	glGenVertexArrays(1, &player_vertex_array);
+	glGenBuffers(1, &player_vertex_buffer);
+	glGenBuffers(1, &player_element_buffer_object);
 
-	glGenVertexArrays(1, &vertex_arr);
-	glGenBuffers(1, &vertex_buffer);
+	glGenVertexArrays(1, &gun_vertex_array);
+	glGenBuffers(1, &gun_vertex_buffer);
+	glGenBuffers(1, &gun_element_buffer_object);
 
-	glBindBuffer(0x8892, vertex_buffer);
-	glBindVertexArray(vertex_arr);
-	glBufferData(0x8892, sizeof(player_vert), player_vert, 0x88E4);
+	glGenVertexArrays(1, &ground_vertex_array);
+	glGenBuffers(1, &ground_vertex_buffer);
+	glGenBuffers(1, &ground_element_buffer_object);
+	
+	glBindBuffer(0x8892, player_vertex_buffer);
+	glBindVertexArray(player_vertex_array);
+	glBufferData(0x8892, sizeof(player_vertices), player_vertices, 0x88E4);
+	glBindBuffer(0x8893, player_element_buffer_object);
+	glBufferData(0x8893, sizeof(player_indecies), player_indecies, 0x88E4);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(0x8892, gun_vertex_buffer);
+	glBindVertexArray(gun_vertex_array);
+	glBufferData(0x8892, sizeof(gun_vertices), gun_vertices, 0x88E4);
+	glBindBuffer(0x8893, gun_element_buffer_object);
+	glBufferData(0x8893, sizeof(gun_indecies), gun_indecies, 0x88E4);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(0x8892, ground_vertex_buffer);
+	glBindVertexArray(ground_vertex_array);
+	glBufferData(0x8892, sizeof(ground_vertices), ground_vertices, 0x88E4);
+	glBindBuffer(0x8893, ground_element_buffer_object);
+	glBufferData(0x8893, sizeof(ground_indecies), ground_indecies, 0x88E4);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
     while (1)
-	{ 
-      if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+	{
+	  GetCursorPos(&mouse_pos);
+	  float angle = atan2(mouse_pos.y - HEIGHT/2, mouse_pos.x - WIDTH/2);
+	  player_vertices[0] += speed * 0.001f;
+	  player_vertices[3] += speed * 0.001f;
+	  player_vertices[6] += speed * 0.001f;
+	  player_vertices[9] += speed * 0.001f;
+
+	  gun_vertices[0] += speed * 0.001f;
+	  gun_vertices[3] += speed * 0.001f;
+	  gun_vertices[6] += speed * 0.001f;
+	  gun_vertices[9] += speed * 0.001f;
+
+	  glBindBuffer(0x8892, player_vertex_buffer);
+	  glBindVertexArray(player_vertex_array);
+	  glBufferData(0x8892, sizeof(player_vertices), player_vertices, 0x88E4);
+
+	  if (!is_on_ground)
+	  {
+	    player_vertices[1] += jumping_velocity;
+		player_vertices[4] += jumping_velocity;
+		player_vertices[7] += jumping_velocity;
+		player_vertices[10] += jumping_velocity;
+		gun_vertices[1] += jumping_velocity;
+		gun_vertices[4] += jumping_velocity;
+		gun_vertices[7] += jumping_velocity;
+		gun_vertices[10] += jumping_velocity;
+		jumping_velocity -= gravity * 0.01f;
+	  }
+	  if (player_vertices[4] <= 0.1f)
+		is_on_ground = 1;
+	  if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 	  { 
 		  if (msg.message == WM_QUIT)
 			break;
@@ -248,8 +414,23 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	  ProcessInput();
 	  glClearColor(0.09f, 0.09f, 0.09f, 1.0f);
 	  glClear(GL_COLOR_BUFFER_BIT);	    
-	  glUseProgram(gun_p);
-	  glDrawArrays(GL_TRIANGLES, 0, 3);
+	  glUseProgram(player_shader_program);	  
+	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	  glUseProgram(gun_shader_program);	  
+
+	  glBindBuffer(0x8892, gun_vertex_buffer);
+	  glBindVertexArray(gun_vertex_array);
+	  glUniform1f(glGetUniformLocation(gun_shader_program, "angle"), -angle);	  
+	  glUniform1f(glGetUniformLocation(gun_shader_program, "rotation_offset_x"), player_vertices[0] + 0.02f);	  
+	  glUniform1f(glGetUniformLocation(gun_shader_program, "rotation_offset_y"), player_vertices[1] + 0.02f);
+	  glBufferData(0x8892, sizeof(gun_vertices), gun_vertices, 0x88E4);  
+	  glBindBuffer(0x8893, gun_element_buffer_object);      
+	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	  glUseProgram(ground_shader_program);
+	  glBufferData(0x8892, sizeof(ground_vertices), ground_vertices, 0x88E4);  
+	  glBindBuffer(0x8893, ground_element_buffer_object);      
+	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	  SwapBuffers(hdc);
 	}
 	return 0;
