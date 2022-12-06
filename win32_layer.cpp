@@ -1,11 +1,8 @@
 # define WIN32_LEAN_AND_MEAN
-# define RGBIT(a, r, g, b) (a << 24 | r << 16 | g << 8 | b)
-# define DDRAW_INIT(dsurface) {memset(&dsurface, 0, sizeof(dsurface));}
 # define KEY_DOWN(key) ((GetAsyncKeyState(key) & 0x8000) ? 1 : 0)
 # define KEY_UP(key) ((GetAsyncKeyState(key) & 0x8000) ? 0 : 1)
 # define WIDTH 700
 # define HEIGHT 700
-# define RAD2DEG(ang) {return (ang * 180.0/M_PI);}
 
 #include <stdio.h>
 #include <windows.h>
@@ -52,6 +49,7 @@ void ProcessInput()
 	  speed = 0;
 	if (KEY_DOWN(VK_SPACE) && is_on_ground)
 	{
+	  gravity = 0.0001f;
 	  is_on_ground = 0;
 	  jumping_velocity = 0.0008f;
 	}
@@ -401,6 +399,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 		gun_vertices[7] += jumping_velocity;
 		gun_vertices[10] += jumping_velocity;
 		jumping_velocity -= gravity * 0.01f;
+		gravity += 0.0000001f;
 	  }
 	  if (player_vertices[4] <= 0.1f)
 		is_on_ground = 1;
@@ -421,8 +420,8 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	  glBindBuffer(0x8892, gun_vertex_buffer);
 	  glBindVertexArray(gun_vertex_array);
 	  glUniform1f(glGetUniformLocation(gun_shader_program, "angle"), -angle);	  
-	  glUniform1f(glGetUniformLocation(gun_shader_program, "rotation_offset_x"), player_vertices[0] + 0.02f);	  
-	  glUniform1f(glGetUniformLocation(gun_shader_program, "rotation_offset_y"), player_vertices[1] + 0.02f);
+	  glUniform1f(glGetUniformLocation(gun_shader_program, "rotation_offset_x"), player_vertices[0] + 0.01f);	  
+	  glUniform1f(glGetUniformLocation(gun_shader_program, "rotation_offset_y"), player_vertices[1] + 0.005f);
 	  glBufferData(0x8892, sizeof(gun_vertices), gun_vertices, 0x88E4);  
 	  glBindBuffer(0x8893, gun_element_buffer_object);      
 	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
