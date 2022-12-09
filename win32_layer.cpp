@@ -22,7 +22,7 @@ float gravity = 0.0001f;
 
 LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam); // Window Procedure Handler
 
-#include "GL_functions_define.h"
+#include "GL_functions_define.cpp"
 #include "Entity_properties.cpp"
 
 bool is_on_ground = 1;
@@ -43,6 +43,24 @@ void ProcessInput()
 	}
 }
 
+bool Axis_aligned_bounding_box_collision_x(Entity entity1, Entity entity2)
+{
+  return ((entity1.x + speed * 0.001f + entity1.width < entity2.x - entity2.width) ||
+		  (entity1.x + speed * 0.001f - entity1.width > entity2.x + entity2.width) ||
+		  (entity1.y + jumping_velocity > entity2.y + entity2.height) ||
+		  (entity1.y + jumping_velocity + entity1.height < entity2.y));
+}
+
+bool Axis_aligned_bounding_box_collision_y(Entity entity1, Entity entity2)
+{
+  return !(entity1.y > entity2.y + entity2.height + entity1.height)
+	&& entity1.x + speed * 0.001f > entity2.x - entity2.width - entity1.width
+	&& entity1.x + speed * 0.001f < entity2.x + entity2.width + entity1.width;
+}
+
+WGLCHOOSEPIXELFORMATARB *wglChoosePixelFormatARB;
+WGLCREATECONTEXTATTRIBSARB wglCreateContextAttribsARB;
+
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int cmd_show)
 {
     WNDCLASSEX 				dummy_window_class;
@@ -61,7 +79,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
     dummy_window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     dummy_window_class.lpszMenuName = 0;
     dummy_window_class.lpszClassName = "CLASS1";
-    dummy_window_class.hIconSm = LoadIcon(0, IDI_APPLICATION);
+	dummy_window_class.hIconSm = LoadIcon(0, IDI_APPLICATION);
 
 	RegisterClassEx(&dummy_window_class);
 
@@ -98,35 +116,19 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	HGLRC openglcontext = wglCreateContext(hdc);
 	wglMakeCurrent(hdc, openglcontext);
 
-	WGLCHOOSEPIXELFORMATARB *wglChoosePixelFormatARB = (WGLCHOOSEPIXELFORMATARB*)wglGetProcAddress("wglChoosePixelFormatARB");
-	WGLCREATECONTEXTATTRIBSARB wglCreateContextAttribsARB = (WGLCREATECONTEXTATTRIBSARB)wglGetProcAddress("wglCreateContextAttribsARB");
+	wglChoosePixelFormatARB = (WGLCHOOSEPIXELFORMATARB*)wglGetProcAddress("wglChoosePixelFormatARB");
+	wglCreateContextAttribsARB = (WGLCREATECONTEXTATTRIBSARB)wglGetProcAddress("wglCreateContextAttribsARB");
+
+	Get_functions();
 
 	// Replace this with glew in the future
-    glCreateShader = (GL_CREATESHADER)wglGetProcAddress("glCreateShader");
-	glBindBuffer = (GL_BINDBUFFER)wglGetProcAddress("glBindBuffer");
-    glUseProgram = (GL_USEPROGRAM)wglGetProcAddress("glUseProgram");
-    glBufferData = (GL_BUFFERDATA)wglGetProcAddress("glBufferData");	
-	glGenBuffers = (GL_GENBUFFERS)wglGetProcAddress("glGenBuffers");    
-	glShaderSource = (GL_SHADERSOURCE)wglGetProcAddress("glShaderSource");
-	glCompileShader = (GL_COMPILESHADER)wglGetProcAddress("glCompileShader");
-	glCreateProgram = (GL_CREATEPROGRAM)wglGetProcAddress("glCreateProgram");
-	glAttachShader = (GL_ATTACHSHADER)wglGetProcAddress("glAttachShader");
-    glLinkProgram = (GL_LINKPROGRAM)wglGetProcAddress("glLinkProgram");
-	glDeleteShader = (GL_DELETESHADER)wglGetProcAddress("glDeleteShader");
-    glVertexAttribPointer = (GL_VERTEXATTRIBPOINTER)wglGetProcAddress("glVertexAttribPointer");
-	glEnableVertexAttribArray = (GL_ENABLEVERTEXATTRIBARRAY)wglGetProcAddress("glEnableVertexAttribArray");
-	glGenVertexArrays = (GL_GENVERTEXARRAYS)wglGetProcAddress("glGenVertexArrays");
-	glBindVertexArray = (GL_BINDVERTEXARRAY)wglGetProcAddress("glBindVertexArray");
-    glGetUniformLocation = (GL_GETUNIFORMLOCATION)wglGetProcAddress("glGetUniformLocation");
-	glUniform1f = (GL_UNIFORM1F)wglGetProcAddress("glUniform1f");
-
 	wglMakeCurrent(hdc, 0);
 	wglDeleteContext(openglcontext);
 	ReleaseDC(hwindow, hdc);
 	DestroyWindow(hwindow);
-
+	
 	HWND hwindo = CreateWindowEx(0, "CLASS2", "Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, WIDTH, HEIGHT, 0, 0, hinstance, 0);
-	hdc = GetDC(hwindo);
+    hdc = GetDC(hwindo);
 	openglcontext = 0;
 	l = ChoosePixelFormat(hdc, &pdf);
 
@@ -142,12 +144,14 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	  WGL_STENCIL_BITS_ARB, 8,
 	  0
 	};
-	static const int attrib_list[] = {
+	static const int attrib_list[] =
+    {
 	  WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
 	  WGL_CONTEXT_MINOR_VERSION_ARB, 3,
 	  WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 	  WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-	  0};
+	  0
+	};
     int pixel_format;
 	UINT num_format;
 
@@ -158,27 +162,34 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	SetPixelFormat(hdc, pixel_format, &pdf);
 	openglcontext = wglCreateContextAttribsARB(hdc, 0, attrib_list);
 	wglMakeCurrent(hdc, openglcontext);
-
+	wglMakeCurrent(hdc, openglcontext);
+	
 	Entity player(0.0f, 0.0f, 0.05f, 0.1f, "player_vertex_shader.glsl", "player_fragement_shader.glsl");
-	Entity gun(0.07f, 0.0f, 0.1f, 0.03f, "gun_vertex_shader.glsl", "gun_fragement_shader.glsl");
-	Entity ground(0.0f, 0.0f, 0.1f, 0.1, "ground_vertex_shader.glsl", "ground_fragment_shader.glsl");
-
-	// Separate the gameplay logic from the interaction with the OS layer to abstract the game engine
+	Entity gun(0.1f, 0.0f, 0.1f, 0.03f, "gun_vertex_shader.glsl", "gun_fragement_shader.glsl");
+	Entity grounds[3] =
+	{
+	  Entity(0.4f, 0.0f, 0.2f, 0.06f, "ground_vertex_shader.glsl", "ground_fragment_shader.glsl"),
+	  Entity(-0.3f, 0.0f, 0.2f, 0.06f, "ground_vertex_shader.glsl", "ground_fragment_shader.glsl"),
+	  Entity(0.4f, -0.3f, 2.2f, 0.06f, "ground_vertex_shader.glsl", "ground_fragment_shader.glsl")
+	};
+	// To DO: Separate the gameplay logic from the interaction with the OS layer to abstract the game engine
 	// To DO: make the collision detection
 	while (1)
 	{
-	  player.x += speed * 0.001f;
-	  gun.x += speed * 0.001f;
-
+	  if (Axis_aligned_bounding_box_collision_x(player, grounds[0]) && Axis_aligned_bounding_box_collision_x(player, grounds[1]))
+	  {
+		player.x += speed * 0.001f;
+		gun.x += speed * 0.001f;
+	  }
 	  if (!is_on_ground)
 	  {
-	    player.y += jumping_velocity;
+		player.y += jumping_velocity;
 		gun.y += jumping_velocity;
 		jumping_velocity -= gravity * 0.01f;
-		gravity += 0.0000003f;
+		gravity += 0.0000002f;
 	  }
-	  if (player.y <= 0.01f)
-	   	is_on_ground = 1;
+	  is_on_ground = Axis_aligned_bounding_box_collision_y(player, grounds[0]) 
+		|| Axis_aligned_bounding_box_collision_y(player, grounds[1]) || Axis_aligned_bounding_box_collision_y(player, grounds[2]);
 	  if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 	  { 
 		  if (msg.message == WM_QUIT)
@@ -191,7 +202,9 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	  glClear(GL_COLOR_BUFFER_BIT);
 	  player.render_and_update_entity();
 	  gun.render_and_update_entity();
-	  ground.render_and_update_entity();
+	  grounds[0].render_and_update_entity();
+	  grounds[1].render_and_update_entity();
+	  grounds[2].render_and_update_entity();
 	  SwapBuffers(hdc);
 	}
 	return 0;

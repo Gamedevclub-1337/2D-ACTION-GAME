@@ -43,3 +43,26 @@ GL_GENVERTEXARRAYS	glGenVertexArrays;
 GL_BINDVERTEXARRAY	glBindVertexArray;
 GL_GETUNIFORMLOCATION glGetUniformLocation;
 GL_UNIFORM1F		glUniform1f;
+
+void Get_functions()
+{
+      glCreateShader = (GL_CREATESHADER)wglGetProcAddress("glCreateShader");
+	glBindBuffer = (GL_BINDBUFFER)wglGetProcAddress("glBindBuffer");
+    glUseProgram = (GL_USEPROGRAM)wglGetProcAddress("glUseProgram");
+    glBufferData = (GL_BUFFERDATA)wglGetProcAddress("glBufferData");
+	glGenBuffers = (GL_GENBUFFERS)wglGetProcAddress("glGenBuffers");
+	glShaderSource  = (GL_SHADERSOURCE)wglGetProcAddress("glShaderSource");
+	glCompileShader = (GL_COMPILESHADER)wglGetProcAddress("glCompileShader");
+	glCreateProgram = (GL_CREATEPROGRAM)wglGetProcAddress("glCreateProgram");
+	glAttachShader  = (GL_ATTACHSHADER)wglGetProcAddress("glAttachShader");
+    glLinkProgram   = (GL_LINKPROGRAM)wglGetProcAddress("glLinkProgram");
+	glDeleteShader  = (GL_DELETESHADER)wglGetProcAddress("glDeleteShader");
+    glVertexAttribPointer = (GL_VERTEXATTRIBPOINTER)wglGetProcAddress("glVertexAttribPointer");
+	glEnableVertexAttribArray = (GL_ENABLEVERTEXATTRIBARRAY)wglGetProcAddress("glEnableVertexAttribArray");
+	glGenVertexArrays = (GL_GENVERTEXARRAYS)wglGetProcAddress("glGenVertexArrays");
+	glBindVertexArray = (GL_BINDVERTEXARRAY)wglGetProcAddress("glBindVertexArray");
+    glGetUniformLocation = (GL_GETUNIFORMLOCATION)wglGetProcAddress("glGetUniformLocation");
+	glUniform1f = (GL_UNIFORM1F)wglGetProcAddress("glUniform1f");
+
+}
+
