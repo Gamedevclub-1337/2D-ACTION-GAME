@@ -1,0 +1,60 @@
+version(1);
+
+project_name = "OpenGL 2D Action Game";
+
+patterns = {
+	"*.c",
+	"*.cpp",
+	"*.c",
+	"*.h",
+	"*.hpp",
+	"*.bat",
+	"*.glsl",
+	"*.4coder",
+};
+
+blacklist_patterns = {
+	".*", 
+};
+
+load_paths = {
+	{ {
+	  { ".", .relative = true, .recursive = false, },
+	  { "src\\", .relative = true, .recursive = true, },
+	}, .os = "win" },
+	{ {
+	  { ".", .relative = true, .recursive = false, },
+	  { "src/", .relative = true, .recursive = true, },
+	}, .os = "linux" },
+	{ {
+	  { ".", .relative = true, .recursive = false, },
+	  { "src/", .relative = true, .recursive = true, },
+	}, .os = "mac" },
+};
+
+command_list = {
+ 	{ .name = "build", 
+	  .out = "*compilation*", .footer_panel = true, .save_dirty_files = true, .cursor_at_end = false,
+	  .cmd = { {"build.bat", .os = "win" },
+				{"", .os = "mac"},
+				{"", .os = "linux"}},
+	},
+	{ .name = "run",
+	  .out = "*run*", .footer_panel = true, .save_dirty_files = false, .cursor_at_end = true,
+	  .cmd = { {"run.bat", .os = "win"},
+				{"", .os = "linux"},
+				{"", .os = "mac"}},
+	},
+	{
+		.name = "debug",
+		.cmd = { {"remedyBG build\\game.exe", .os = "win"},
+				 {"", .os = "linux"},
+				 {"", .os = "mac"},
+				},
+	},
+};
+
+fkey_command[1] = "build";
+fkey_command[2] = "buildShaders";
+fkey_command[5] = "run";
+fkey_command[9] = "debug";
