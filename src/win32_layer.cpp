@@ -13,10 +13,14 @@
 
 #include "GL_functions_define.h"
 #include "win32GL.h"
+#include "tools.h"
+#include "Entity_properties.h"
+
 
 #include "win32GL.cpp"
 #include "GL_functions_define.cpp"
 #include "Entity_properties.cpp"
+#include "tools.cpp"
 
 // TODO(Yassine): Error Logging System.
 
