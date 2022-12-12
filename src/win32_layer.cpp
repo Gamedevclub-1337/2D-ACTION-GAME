@@ -10,7 +10,8 @@
 #include <iostream>
 #include <string>
 #include <cmath>
-
+#define ENABLE_INFO_LOG
+#include "log.h"
 #include "GL_functions_define.h"
 #include "win32GL.h"
 #include "tools.h"
@@ -19,10 +20,10 @@
 
 #include "win32GL.cpp"
 #include "GL_functions_define.cpp"
-#include "Entity_properties.cpp"
 #include "tools.cpp"
+#include "Entity_properties.cpp"
+#include "log.cpp"
 
-// TODO(Yassine): Error Logging System.
 
 float speed = 1.0f;
 float jumping_velocity = 0.001f;
@@ -77,14 +78,14 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	
 	if (!RegisterClassEx(&real_window_class))
 	{
-		MessageBox(0, "RegisterClassEx() Real Window Failed\n", "ERROR", MB_OK);
+		ERROR_LOG("RegisterClassEx() Failed in %s %d\n", __FILE__, __LINE__);;
 		return (1);
 	}
 	
 	HWND window_handle = CreateWindowEx(0, "CLASS1", "Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, WIDTH, HEIGHT, 0, 0, hinstance, 0);
 	if (!window_handle)
 	{
-		MessageBox(0, "CreateWindowEx() Real Window Failed\n", "ERROR", MB_OK);
+		ERROR_LOG("CreateWindowEx() Failed in %s %d\n", __FILE__, __LINE__);;
 		return (1);
 	}
 	
@@ -98,6 +99,10 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	}
 	wglMakeCurrent(window_context, glContext);
 	
+	INFO_LOG("%s\n", glGetString(GL_VENDOR));
+	INFO_LOG("%s\n", glGetString(GL_RENDERER));
+	INFO_LOG("%s\n", glGetString(GL_VERSION));
+	
 	Entity player(0.0f, 0.0f, 0.05f, 0.1f, "../src/shaders/player_vertex_shader.glsl", "../src/shaders/player_fragement_shader.glsl");
 	Entity gun(0.1f, 0.0f, 0.1f, 0.03f, "../src/shaders/gun_vertex_shader.glsl", "../src/shaders/gun_fragement_shader.glsl");
 	Entity grounds[3] =
@@ -110,7 +115,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE prev_instance, LPSTR cmd, int 
 	// To DO: make the collision detection
 	
 	MSG						msg = {};
-	POINT					mouse_pos = {};
+	
 	while (1)
 	{
 		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))

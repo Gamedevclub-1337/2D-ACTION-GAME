@@ -13,7 +13,7 @@ HGLRC	win32InitOpenGL(HWND window_handle)
 	
 	if (!RegisterClassEx(&dummy_window_class))
 	{
-		MessageBox(0, "RegisterClassEx(): Dummy Window Failed\n", "ERROR", MB_OK);
+		ERROR_LOG("RegisterClassEx() Failed in : %s, %d\n", __FILE__, __LINE__);
 		return (NULL);
 	}
 	
@@ -25,7 +25,7 @@ HGLRC	win32InitOpenGL(HWND window_handle)
 											  0, 0, dummy_window_class.hInstance, 0);
 	if (!dummy_window_handle)
 	{
-		MessageBox(0, "CreateWindowEx(): Dummy Window Failed\n", "ERROR", MB_OK);
+		ERROR_LOG("CreateWindowEx() Failed in : %s, %d\n", __FILE__, __LINE__);
 		return (NULL);
 	}
 	
@@ -46,7 +46,7 @@ HGLRC	win32InitOpenGL(HWND window_handle)
 	int pf = ChoosePixelFormat(dummy_window_context, &pdf);
 	if (pf == 0)
 	{
-		MessageBox(0, "ChoosePixelFormat() Failed\n", "ERROR", MB_OK);
+		ERROR_LOG("ChoosePixelFormat() Failed in : %s, %d\n", __FILE__, __LINE__);
 		return (NULL);
 	}
 	
@@ -55,7 +55,7 @@ HGLRC	win32InitOpenGL(HWND window_handle)
 	HGLRC dummy_GL_context = wglCreateContext(dummy_window_context);
 	if (dummy_GL_context == NULL)
 	{
-		MessageBox(0, "wglCreateContext(): Dummy GLContext Failed\n", "ERROR", MB_OK);
+		ERROR_LOG("wglCreateContext() Failed in : %s, %d\n", __FILE__, __LINE__);
 		return (NULL);
 	}
 	
@@ -77,7 +77,7 @@ HGLRC	win32InitOpenGL(HWND window_handle)
 	pf= ChoosePixelFormat(window_context, &pdf);
 	if (pf == 0)
 	{
-		MessageBox(0, "ChoosePixelFormat(): Real Window Context Failed\n", "ERROR", MB_OK);
+		ERROR_LOG("ChoosePixelFormat() Failed in : %s, %d\n", __FILE__, __LINE__);
 		return (NULL);
 	}
 	
@@ -109,7 +109,7 @@ HGLRC	win32InitOpenGL(HWND window_handle)
 	wglChoosePixelFormatARB(window_context, attriblist, 0, 1, &pixel_format, &num_format);
 	if (num_format == 0)
 	{
-		MessageBox(0, "wglChoosePixelFormatARB() Failed\n", "ERROR", MB_OK);
+		ERROR_LOG("wglChoosePixelFormat() Failed in : %s, %d\n", __FILE__, __LINE__);
 		return (NULL);
 	}
 	
@@ -118,10 +118,14 @@ HGLRC	win32InitOpenGL(HWND window_handle)
 	DescribePixelFormat(window_context, pixel_format, sizeof(pdf), &pdf);
 	if (!SetPixelFormat(window_context, pixel_format, &pdf))
 	{
-		MessageBox(0, "SetPixelFormat() Failed\n", "ERROR", MB_OK);
+		ERROR_LOG("SetPixelFormat() Failed in : %s, %d\n", __FILE__, __LINE__);
 		return (NULL);
 	}
 	result = wglCreateContextAttribsARB(window_context, 0, attrib_list);
+	if (!result)
+	{
+		ERROR_LOG("wglCreateContext() Failed in : %s, %d\n", __FILE__, __LINE__);
+	}
 	
 	return (result);
 }

@@ -8,7 +8,7 @@ Buffer	readFile(const char *filepath)
 	FILE*	file = fopen(filepath, "r+");
 	if (file == NULL)
 	{
-		// TODO(Yassine): log the Error Type.
+		ERROR_LOG("fopen(%s) Failed in : %s, %d\n", filepath, __FILE__, __LINE__);
 		return (result);
 	}
 	fseek(file, 0, SEEK_END);
@@ -21,7 +21,7 @@ Buffer	readFile(const char *filepath)
 		free(result.mem);
 		result.mem = NULL;
 		result.size = 0;
-		// TODO(Yassine): Log The Error.
+		ERROR_LOG("fread(%s) Failed in : %s, %d\n", filepath, __FILE__, __LINE__);
 		return (result);
 	}
 	return (result);
@@ -34,7 +34,7 @@ Buffer	readFileNullTerminated(const char* filepath)
 	FILE*	file = fopen(filepath, "r+");
 	if (file == NULL)
 	{
-		// TODO(Yassine): log the Error Type.
+		ERROR_LOG("fopen(%s) Failed in : %s, %d\n", filepath, __FILE__, __LINE__);
 		return (result);
 	}
 	fseek(file, 0, SEEK_END);
@@ -47,7 +47,7 @@ Buffer	readFileNullTerminated(const char* filepath)
 		free(result.mem);
 		result.mem = NULL;
 		result.size = 0;
-		// TODO(Yassine): Log The Error.
+		ERROR_LOG("fread(%s) Failed in : %s, %d\n", filepath, __FILE__, __LINE__);
 		return (result);
 	}
 	((char*)result.mem)[result.size] = '\0';
