@@ -16,13 +16,14 @@
 #include "win32GL.h"
 #include "tools.h"
 #include "Entity_properties.h"
-
+#include "glTools.h"
 
 #include "win32GL.cpp"
 #include "GL_functions_define.cpp"
-#include "tools.cpp"
+#include "win32Tools.cpp"
 #include "Entity_properties.cpp"
 #include "log.cpp"
+#include "glTools.cpp"
 
 
 float speed = 1.0f;

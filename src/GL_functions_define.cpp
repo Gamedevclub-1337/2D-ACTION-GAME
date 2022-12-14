@@ -19,6 +19,10 @@ void gl_GetFunctions()
 	glBindVertexArray = (GL_BINDVERTEXARRAY)wglGetProcAddress("glBindVertexArray");
     glGetUniformLocation = (GL_GETUNIFORMLOCATION)wglGetProcAddress("glGetUniformLocation");
 	glUniform1f = (GL_UNIFORM1F)wglGetProcAddress("glUniform1f");
-	
+	glGetShaderInfoLog = (GL_GETSHADERINFOLOG)wglGetProcAddress("glGetShaderInfoLog");
+	glGetShaderiv = (GL_GETSHADERIV)wglGetProcAddress("glGetShaderiv");
+	glDeleteProgram = (GL_DELETEPROGRAM)wglGetProcAddress("glDeleteProgram");
+	glGetProgramiv = (GL_GETPROGRAMIV)wglGetProcAddress("glGetProgramiv");
+	glGetProgramInfoLog = (GL_GETPROGRAMINFOLOG)wglGetProcAddress("glGetProgramInfoLog");
 }
 

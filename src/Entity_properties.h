@@ -1,5 +1,7 @@
 #ifndef _ENTITY_PROPERTIES_H
 #define _ENTITY_PROPERTIES_H
+#include "GL_functions_define.h"
+#include "glTools.h"
 
 
 struct Entity
@@ -12,8 +14,6 @@ struct Entity
 	int    entity_indecies[6];
 	char	*vertex_shader_source;
 	char	*fragment_shader_source;
-	GLuint vertex_shader_ID;
-	GLuint fragement_shader_ID;
 	GLuint shader_program_ID;
 	GLuint vertex_buffer_object;
 	GLuint vertex_array_object;
@@ -46,7 +46,7 @@ struct Entity
 		entity_indecies[4] = 3;
 		entity_indecies[5] = 2;
 		
-		
+		/*
 		Buffer	vertex_shader_buffer = readFileNullTerminated(vertex_shader);
 		
 		Buffer	fragment_shader_buffer = readFileNullTerminated(fragment_shader);
@@ -63,7 +63,9 @@ struct Entity
 		glLinkProgram(shader_program_ID);
 		glDeleteShader(vertex_shader_ID);
 		glDeleteShader(fragement_shader_ID);
+		*/
 		
+		shader_program_ID = compileProgram(vertex_shader, fragment_shader);
 		glGenVertexArrays(1, &vertex_array_object);
 		glGenBuffers(1, &vertex_buffer_object);
 		glGenBuffers(1, &element_buffer_object);
